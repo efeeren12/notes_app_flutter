@@ -17,7 +17,7 @@ class _NoteDetailState extends State<NoteDetail> {
   List<Category> allCategories = [];
   late DatabaseHelper databaseHelper;
   int? selectedCategoryID;
-  int selectedPriority = 0;
+  int selectedPriority = 1;
   late String noteTitle, noteContent;
   static var _priority = ["Düşük", "Orta", "Yüksek"];
 

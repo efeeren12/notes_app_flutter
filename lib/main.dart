@@ -19,11 +19,17 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class NoteList extends StatelessWidget {
-  DatabaseHelper databaseHelper = DatabaseHelper();
-  var _scaffoldKey = GlobalKey<ScaffoldState>();
-
+class NoteList extends StatefulWidget {
   NoteList({super.key});
+
+  @override
+  State<NoteList> createState() => _NoteListState();
+}
+
+class _NoteListState extends State<NoteList> {
+  DatabaseHelper databaseHelper = DatabaseHelper();
+
+  var _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -132,11 +138,10 @@ class NoteList extends StatelessWidget {
 
   _goToDetailPage(BuildContext context) {
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => NoteDetail(
-                  title: "Yeni Not",
-                )));
+            context,
+            MaterialPageRoute(
+                builder: (BuildContext context) => NoteDetail(title: "Yeni Not")))
+        .then((value) => setState(() {}));
   }
 }
 
@@ -166,15 +171,79 @@ class _NotesState extends State<Notes> {
 
   @override
   Widget build(BuildContext context) {
-    return allNotes.isEmpty
-        ? const Center(child: CircularProgressIndicator())
-        : ListView.builder(
-          itemCount: allNotes.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(allNotes[index].noteTitle),
-              );
-            },
-          );
+    return FutureBuilder(
+        future: databaseHelper.getNoteList(),
+        builder: (context, AsyncSnapshot<List<Note>> snapShot) {
+          if (snapShot.connectionState == ConnectionState.done) {
+            allNotes = snapShot.data ?? [];
+
+            return ListView.builder(
+              itemCount: allNotes.length,
+              itemBuilder: (context, index) {
+                return ExpansionTile(
+                  title: Text(allNotes[index].noteTitle),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  "Kategori : ",
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  allNotes[index].categoryTitle,
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  "Oluşturulma Tarihi : ",
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  databaseHelper.dateFormat(allNotes[index]
+                                          .noteDate
+                                          .toString()
+                                          .contains("CURRENT_TIMESTAMP")
+                                      ? DateTime.now()
+                                      : DateTime.tryParse(
+                                              allNotes[index].noteDate) ??
+                                          DateTime.now()),
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        });
   }
 }

@@ -39,11 +39,25 @@ class DatabaseHelper {
 
       // Write and flush the bytes written
       await File(path).writeAsBytes(bytes, flush: true);
-    } else {}
+    } else {
+      print("Opening existing database");
+    }
 
     // Open the database
-    var db = await openDatabase(path, readOnly: false);
+    var db = await openDatabase(
+      path,
+      version: 2, // Veritabanı versiyonunu artırın
+      onUpgrade: _onUpgrade, // onUpgrade metodunu ekleyin
+    );
     return db;
+  }
+
+ 
+  // onUpgrade metodunu ekliyoruz
+  void _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < newVersion) {
+      await db.execute("ALTER TABLE note ADD COLUMN categoryTitle TEXT");
+    }
   }
 
   Future<List<Map<String, dynamic>>> getCategories() async {
@@ -72,15 +86,20 @@ class DatabaseHelper {
     return result;
   }
 
-
-
-
-
-
   Future<List<Map<String, dynamic>>> getNotes() async {
     var db = await _initializeDatabase();
-    var result = await db.query("note", orderBy: 'noteID DESC');
+    var result = await db.rawQuery(
+        "select * from note inner join category  on category.categoryID = note.categoryID;");
     return result;
+  }
+
+  Future<List<Note>> getNoteList() async {
+    var noteMapList = await getNotes();
+    var noteList = <Note>[];
+    for (Map<String, dynamic> map in noteMapList) {
+      noteList.add(Note.fromMap(map));
+    }
+    return noteList;
   }
 
   Future<int> addNote(Note note) async {
@@ -91,18 +110,19 @@ class DatabaseHelper {
 
   Future<int> updateNote(Note note) async {
     var db = await _initializeDatabase();
-    var result = await db.update("note", note.toMap(), where: "noteID = ?", whereArgs: [note.noteID]);
+    var result = await db.update("note", note.toMap(),
+        where: "noteID = ?", whereArgs: [note.noteID]);
     return result;
   }
 
   Future<int> deleteNote(int noteID) async {
     var db = await _initializeDatabase();
-    var result = await db.delete("note", where: "noteID = ?", whereArgs: [noteID]);
+    var result =
+        await db.delete("note", where: "noteID = ?", whereArgs: [noteID]);
     return result;
   }
 
-  String dateFormat(DateTime tm){
-
+  String dateFormat(DateTime tm) {
     DateTime today = new DateTime.now();
     Duration oneDay = new Duration(days: 1);
     Duration twoDay = new Duration(days: 2);
@@ -134,7 +154,7 @@ class DatabaseHelper {
         month = "Ağustos";
         break;
       case 9:
-        month = "Eylük";
+        month = "Eylül";
         break;
       case 10:
         month = "Ekim";
@@ -176,7 +196,5 @@ class DatabaseHelper {
       return '${tm.day} $month ${tm.year}';
     }
     return "";
-
-
   }
 }
