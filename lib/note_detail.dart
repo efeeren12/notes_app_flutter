@@ -83,12 +83,12 @@ class _NoteDetailState extends State<NoteDetail> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
-                validator: (text){
-                  if(text!.length<3){
+                validator: (text) {
+                  if (text!.length < 3) {
                     return "En az 3 karakter giriniz";
                   }
                 },
-                onSaved: (text){
+                onSaved: (text) {
                   noteTitle = text!;
                 },
                 maxLines: 1,
@@ -102,7 +102,7 @@ class _NoteDetailState extends State<NoteDetail> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
-                onSaved: (text){
+                onSaved: (text) {
                   noteContent = text!;
                 },
                 maxLines: 1,
@@ -169,19 +169,19 @@ class _NoteDetailState extends State<NoteDetail> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-
-                    if(formKey.currentState!.validate()){
+                    if (formKey.currentState!.validate()) {
                       formKey.currentState!.save();
 
                       var now = DateTime.now();
-                      databaseHelper.addNote(Note(selectedCategoryID!, noteTitle, noteContent,now.toString(), selectedPriority)).then((savedNoteID){
-                        if(savedNoteID != 0){
-                          Navigator.pop(context);
+                      databaseHelper
+                          .addNote(Note(selectedCategoryID!, noteTitle,
+                              noteContent, now.toString(), selectedPriority))
+                          .then((savedNoteID) {
+                        if (savedNoteID != 0) {
+                          Navigator.pop(context, true);
                         }
-
                       });
                     }
-
                   },
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade200),

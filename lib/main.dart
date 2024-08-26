@@ -14,27 +14,31 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: NoteList(),
+      home: const NoteList(),
     );
   }
 }
 
 class NoteList extends StatefulWidget {
-  NoteList({super.key});
+  const NoteList({super.key});
 
   @override
-  State<NoteList> createState() => _NoteListState();
+  _NoteListState createState() => _NoteListState();
 }
 
 class _NoteListState extends State<NoteList> {
   DatabaseHelper databaseHelper = DatabaseHelper();
+  List<Note> allNotes = [];
 
-  var _scaffoldKey = GlobalKey<ScaffoldState>();
+  @override
+  void initState() {
+    super.initState();
+    _refreshNotes(); // Uygulama başladığında notları yükle
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(
         title: const Center(
           child: Text("Not Sepeti"),
@@ -60,8 +64,116 @@ class _NoteListState extends State<NoteList> {
           ),
         ],
       ),
-      body: const Notes(),
+      body: allNotes.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: allNotes.length,
+              itemBuilder: (context, index) {
+                return ExpansionTile(
+                  leading: _assignPriorityIcon(allNotes[index].notePriority),
+                  title: Text(allNotes[index].noteTitle),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  "Kategori : ",
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  "Oluşturulma Tarihi : ",
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  databaseHelper.dateFormat(
+                                    allNotes[index]
+                                            .noteDate
+                                            .toString()
+                                            .contains("CURRENT_TIMESTAMP")
+                                        ? DateTime.now()
+                                        : DateTime.tryParse(
+                                                allNotes[index].noteDate) ??
+                                            DateTime.now(),
+                                  ),
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              "İçerik : ${allNotes[index].categoryTitle}",
+                              style: const TextStyle(
+                                  color: Colors.black, fontSize: 16),
+                            ),
+                          ),
+                          ButtonBar(
+                            alignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                  onPressed: () =>
+                                      _deleteNote(allNotes[index].noteID!),
+                                  child: const Text(
+                                    "SİL",
+                                    style: TextStyle(color: Colors.redAccent),
+                                  )),
+                              TextButton(
+                                  onPressed: () {},
+                                  child: const Text(
+                                    "GÜNCELLE",
+                                    style: TextStyle(color: Colors.green),
+                                  )),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
+  }
+
+  void _refreshNotes() async {
+    List<Note> notes = await databaseHelper.getNoteList();
+    setState(() {
+      allNotes = notes;
+    });
+  }
+
+  void _goToDetailPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteDetail(
+          title: "Yeni Not",
+        ),
+      ),
+    ).then((value) {
+      if (value == true) {
+        _refreshNotes();
+      }
+    });
   }
 
   void addCategoryDialog(BuildContext context) {
@@ -136,114 +248,43 @@ class _NoteListState extends State<NoteList> {
     );
   }
 
-  _goToDetailPage(BuildContext context) {
-    Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (BuildContext context) => NoteDetail(title: "Yeni Not")))
-        .then((value) => setState(() {}));
-  }
-}
-
-class Notes extends StatefulWidget {
-  const Notes({super.key});
-
-  @override
-  State<Notes> createState() => _NotesState();
-}
-
-class _NotesState extends State<Notes> {
-  List<Note> allNotes = [];
-  late DatabaseHelper databaseHelper;
-
-  @override
-  void initState() {
-    super.initState();
-    allNotes = [];
-    databaseHelper = DatabaseHelper();
-    databaseHelper.getNotes().then((mapListWithNotes) {
-      for (Map<dynamic, dynamic> map in mapListWithNotes) {
-        allNotes.add(Note.fromMap(map as Map<String, dynamic>));
-      }
-      setState(() {});
-    });
+  _assignPriorityIcon(int notePriority) {
+    switch (notePriority) {
+      case 0:
+        return CircleAvatar(
+          backgroundColor: Colors.redAccent.shade100,
+          child: const Text(
+            "AZ",
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      case 1:
+        return CircleAvatar(
+          backgroundColor: Colors.redAccent.shade200,
+          child: const Text("ORTA",
+              style: TextStyle(color: Colors.white, fontSize: 14)),
+        );
+      case 2:
+        return CircleAvatar(
+          backgroundColor: Colors.redAccent.shade700,
+          child: const Text("ACİL", style: TextStyle(color: Colors.white)),
+        );
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: databaseHelper.getNoteList(),
-        builder: (context, AsyncSnapshot<List<Note>> snapShot) {
-          if (snapShot.connectionState == ConnectionState.done) {
-            allNotes = snapShot.data ?? [];
-
-            return ListView.builder(
-              itemCount: allNotes.length,
-              itemBuilder: (context, index) {
-                return ExpansionTile(
-                  title: Text(allNotes[index].noteTitle),
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text(
-                                  "Kategori : ",
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  allNotes[index].categoryTitle,
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text(
-                                  "Oluşturulma Tarihi : ",
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  databaseHelper.dateFormat(allNotes[index]
-                                          .noteDate
-                                          .toString()
-                                          .contains("CURRENT_TIMESTAMP")
-                                      ? DateTime.now()
-                                      : DateTime.tryParse(
-                                              allNotes[index].noteDate) ??
-                                          DateTime.now()),
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+  _deleteNote(int noteID) {
+    databaseHelper.deleteNote(noteID).then((deletedNoteID) {
+      if (deletedNoteID > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Not silindi"),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        setState(() {
+          _refreshNotes();
         });
+      }
+    });
   }
 }
