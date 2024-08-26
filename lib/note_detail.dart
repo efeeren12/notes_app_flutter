@@ -5,8 +5,9 @@ import 'package:notes_app_flutter/utils/database_helper.dart';
 
 class NoteDetail extends StatefulWidget {
   final String title;
+  Note? noteToEdit;
 
-  NoteDetail({required this.title, super.key});
+  NoteDetail({super.key, required this.title, this.noteToEdit});
 
   @override
   State<NoteDetail> createState() => _NoteDetailState();
@@ -19,7 +20,7 @@ class _NoteDetailState extends State<NoteDetail> {
   int? selectedCategoryID;
   int selectedPriority = 1;
   late String noteTitle, noteContent;
-  static var _priority = ["Düşük", "Orta", "Yüksek"];
+  static final _priority = ["Düşük", "Orta", "Yüksek"];
 
   @override
   void initState() {
@@ -34,6 +35,13 @@ class _NoteDetailState extends State<NoteDetail> {
           selectedCategoryID = allCategories[0].categoryID; // Default selection
         }
       });
+      if(widget.noteToEdit != null){
+        selectedCategoryID = widget.noteToEdit!.categoryID;
+        selectedCategoryID = widget.noteToEdit!.notePriority;
+      }else{
+        selectedCategoryID = 1;
+        selectedPriority = 0;
+      }
     });
   }
 
@@ -48,7 +56,6 @@ class _NoteDetailState extends State<NoteDetail> {
         key: formKey,
         child: Column(
           children: [
-            // Kategori seçimi
             Row(
               children: [
                 const Padding(
@@ -69,7 +76,9 @@ class _NoteDetailState extends State<NoteDetail> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       items: createCategoryItems(),
-                      value: selectedCategoryID,
+                      value: widget.noteToEdit != null
+                          ? widget.noteToEdit!.categoryID
+                          : 1,
                       onChanged: (int? selectedID) {
                         setState(() {
                           selectedCategoryID = selectedID!;
@@ -83,6 +92,9 @@ class _NoteDetailState extends State<NoteDetail> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
+                initialValue: widget.noteToEdit != null
+                    ? widget.noteToEdit!.noteTitle
+                    : "",
                 validator: (text) {
                   if (text!.length < 3) {
                     return "En az 3 karakter giriniz";
@@ -102,6 +114,9 @@ class _NoteDetailState extends State<NoteDetail> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
+                initialValue: widget.noteToEdit != null
+                    ? widget.noteToEdit!.noteContent
+                    : "",
                 onSaved: (text) {
                   noteContent = text!;
                 },
@@ -141,7 +156,9 @@ class _NoteDetailState extends State<NoteDetail> {
                           ),
                         );
                       }).toList(),
-                      value: selectedPriority,
+                      value: widget.noteToEdit != null
+                          ? widget.noteToEdit!.notePriority
+                          : 0,
                       onChanged: (int? selectedPriorityID) {
                         setState(() {
                           selectedPriority = selectedPriorityID!;
@@ -173,7 +190,8 @@ class _NoteDetailState extends State<NoteDetail> {
                       formKey.currentState!.save();
 
                       var now = DateTime.now();
-                      databaseHelper
+                      if(widget.noteToEdit == null){
+                        databaseHelper
                           .addNote(Note(selectedCategoryID!, noteTitle,
                               noteContent, now.toString(), selectedPriority))
                           .then((savedNoteID) {
@@ -181,6 +199,16 @@ class _NoteDetailState extends State<NoteDetail> {
                           Navigator.pop(context, true);
                         }
                       });
+                      }else{
+                        databaseHelper
+                          .updateNote(Note.withID(widget.noteToEdit!.noteID, selectedCategoryID!, noteTitle,
+                              noteContent, now.toString(), selectedPriority))
+                          .then((savedNoteID) {
+                        if (savedNoteID != 0) {
+                          Navigator.pop(context, true);
+                        }
+                      });
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

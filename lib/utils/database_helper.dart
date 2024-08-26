@@ -20,40 +20,38 @@ class DatabaseHelper {
     var databasesPath = await getDatabasesPath();
     var path = join(databasesPath, "notes.db");
 
-    // Check if the database exists
+    
     var exists = await databaseExists(path);
 
     if (!exists) {
-      // Should happen only the first time you launch your application
+      
       print("Creating new copy from asset");
 
-      // Make sure the parent directory exists
+      
       try {
         await Directory(dirname(path)).create(recursive: true);
       } catch (_) {}
 
-      // Copy from asset
+      
       ByteData data = await rootBundle.load(join("assets", "notes.db"));
       List<int> bytes =
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
 
-      // Write and flush the bytes written
+      
       await File(path).writeAsBytes(bytes, flush: true);
     } else {
       print("Opening existing database");
     }
 
-    // Open the database
     var db = await openDatabase(
       path,
-      version: 2, // Veritabanı versiyonunu artırın
-      onUpgrade: _onUpgrade, // onUpgrade metodunu ekleyin
+      version: 2, 
+      onUpgrade: _onUpgrade, 
     );
     return db;
   }
 
  
-  // onUpgrade metodunu ekliyoruz
   void _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < newVersion) {
       await db.execute("ALTER TABLE note ADD COLUMN categoryTitle TEXT");
@@ -64,6 +62,15 @@ class DatabaseHelper {
     var db = await _initializeDatabase();
     var result = await db.query("category");
     return result;
+  }
+
+  Future<List<Category>> getCategoryList() async {
+    var categoryMapList = await getCategories();
+    var categoryList = <Category>[];
+    for (Map<String, dynamic> map in categoryMapList) {
+      categoryList.add(Category.fromMap(map));
+    }
+    return categoryList;
   }
 
   Future<int> addCategory(Category category) async {

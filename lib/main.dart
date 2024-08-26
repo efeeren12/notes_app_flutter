@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app_flutter/category_operations.dart';
 import 'package:notes_app_flutter/models/category.dart';
 import 'package:notes_app_flutter/models/notes.dart';
 import 'package:notes_app_flutter/note_detail.dart';
@@ -40,6 +41,13 @@ class _NoteListState extends State<NoteList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          PopupMenuButton(itemBuilder: (context) {
+            return [
+              PopupMenuItem(child: ListTile(leading: const Icon(Icons.category),title: const Text("Kategoriler"),onTap:() => _goToCategoriesPage(),))
+            ];
+          },),
+        ],
         title: const Center(
           child: Text("Not Sepeti"),
         ),
@@ -78,14 +86,21 @@ class _NoteListState extends State<NoteList> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Padding(
+                              const Padding(
                                 padding: EdgeInsets.all(8.0),
                                 child: Text(
                                   "Kategori : ",
                                   style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  allNotes[index].categoryTitle,
+                                  style: const TextStyle(color: Colors.black),
                                 ),
                               ),
                             ],
@@ -121,7 +136,7 @@ class _NoteListState extends State<NoteList> {
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              "İçerik : ${allNotes[index].categoryTitle}",
+                              "İçerik : ${allNotes[index].noteContent}",
                               style: const TextStyle(
                                   color: Colors.black, fontSize: 16),
                             ),
@@ -137,7 +152,9 @@ class _NoteListState extends State<NoteList> {
                                     style: TextStyle(color: Colors.redAccent),
                                   )),
                               TextButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    _updateNote(context, allNotes[index]);
+                                  },
                                   child: const Text(
                                     "GÜNCELLE",
                                     style: TextStyle(color: Colors.green),
@@ -248,6 +265,19 @@ class _NoteListState extends State<NoteList> {
     );
   }
 
+  _updateNote(BuildContext context, Note note) {
+    Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    NoteDetail(title: "Notu Düzenle", noteToEdit: note)))
+        .then((value) {
+      if (value == true) {
+        _refreshNotes();
+      }
+    });
+  }
+
   _assignPriorityIcon(int notePriority) {
     switch (notePriority) {
       case 0:
@@ -286,5 +316,9 @@ class _NoteListState extends State<NoteList> {
         });
       }
     });
+  }
+  
+  _goToCategoriesPage() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Categories()));
   }
 }
