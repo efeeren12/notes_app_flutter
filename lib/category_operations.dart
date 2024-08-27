@@ -24,36 +24,79 @@ class _CategoriesState extends State<Categories> {
     if (allCategories.isEmpty) {
       allCategories = [];
       updateCategoryList();
-
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Kategoriler"),
-        ),
-        body: ListView.builder(
-          itemCount: allCategories.length,
-          itemBuilder: (context, index) {
-            return Card(
-              child: ListTile(
-                title: Text(allCategories[index].categoryTitle),
-                trailing: const Icon(Icons.delete),
-                leading: const Icon(Icons.category),
-                onTap: () {},
-              ),
-            );
-          },
-        ),
-      );
     }
-    return Container();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Kategoriler"),
+      ),
+      body: ListView.builder(
+        itemCount: allCategories.length,
+        itemBuilder: (context, index) {
+          return Card(
+            child: ListTile(
+              title: Text(allCategories[index].categoryTitle),
+              trailing: const Icon(Icons.delete),
+              leading: const Icon(Icons.category),
+              onTap: () => _deleteCategory(allCategories[index].categoryID),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void updateCategoryList() {
-    databaseHelper.getCategoryList().then((mapWithCategories) {
+    databaseHelper.getCategoryList().then((mapWithCategoryList) {
       setState(() {
-        allCategories = mapWithCategories.map<Category>((readMap) {
-          return Category.fromMap(readMap as Map<String, dynamic>);
-        }).toList();
+        allCategories = mapWithCategoryList;
       });
     });
+  }
+
+  _deleteCategory(int? categoryID) {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Kategori Sil"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                    "Kategoriyi sildiğinizde bu kategoriye ait notlar da silinecektir. Emin misiniz?"),
+                ButtonBar(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Vazgeç"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        databaseHelper
+                            .deleteCategory(categoryID!)
+                            .then((deletedCategory) {
+                          if (deletedCategory != 0) {
+                            setState(() {
+                              updateCategoryList();
+                              Navigator.pop(context);
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Kategori silindi")));
+                          }
+                        });
+                      },
+                      child: const Text("Sil",
+                          style: TextStyle(color: Colors.red)),
+                    )
+                  ],
+                )
+              ],
+            ),
+          );
+        });
   }
 }

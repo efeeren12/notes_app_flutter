@@ -14,7 +14,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue),
       home: const NoteList(),
     );
   }
@@ -34,7 +35,7 @@ class _NoteListState extends State<NoteList> {
   @override
   void initState() {
     super.initState();
-    _refreshNotes(); // Uygulama başladığında notları yükle
+    _refreshNotes();
   }
 
   @override
@@ -42,11 +43,21 @@ class _NoteListState extends State<NoteList> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          PopupMenuButton(itemBuilder: (context) {
-            return [
-              PopupMenuItem(child: ListTile(leading: const Icon(Icons.category),title: const Text("Kategoriler"),onTap:() => _goToCategoriesPage(),))
-            ];
-          },),
+          PopupMenuButton(
+            itemBuilder: (context) {
+              return [
+                PopupMenuItem(
+                    child: ListTile(
+                  leading: const Icon(Icons.category),
+                  title: const Text("Kategoriler"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _goToCategoriesPage(context);
+                  },
+                ))
+              ];
+            },
+          ),
         ],
         title: const Center(
           child: Text("Not Sepeti"),
@@ -317,8 +328,13 @@ class _NoteListState extends State<NoteList> {
       }
     });
   }
-  
-  _goToCategoriesPage() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const Categories()));
+
+  _goToCategoriesPage(BuildContext context) {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => const Categories())).then(
+      (value) => setState(
+        () {},
+      ),
+    );
   }
 }

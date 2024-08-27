@@ -17,7 +17,7 @@ class _NoteDetailState extends State<NoteDetail> {
   var formKey = GlobalKey<FormState>();
   List<Category> allCategories = [];
   late DatabaseHelper databaseHelper;
-  int? selectedCategoryID;
+  int? selectedCategoryID = 0;
   int selectedPriority = 1;
   late String noteTitle, noteContent;
   static final _priority = ["Düşük", "Orta", "Yüksek"];
@@ -76,10 +76,8 @@ class _NoteDetailState extends State<NoteDetail> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       items: createCategoryItems(),
-                      value: widget.noteToEdit != null
-                          ? widget.noteToEdit!.categoryID
-                          : 1,
-                      onChanged: (int? selectedID) {
+                      value: selectedCategoryID,
+                      onChanged: (selectedID) {
                         setState(() {
                           selectedCategoryID = selectedID!;
                         });
@@ -156,10 +154,8 @@ class _NoteDetailState extends State<NoteDetail> {
                           ),
                         );
                       }).toList(),
-                      value: widget.noteToEdit != null
-                          ? widget.noteToEdit!.notePriority
-                          : 0,
-                      onChanged: (int? selectedPriorityID) {
+                      value: selectedPriority,
+                      onChanged: (selectedPriorityID) {
                         setState(() {
                           selectedPriority = selectedPriorityID!;
                         });
